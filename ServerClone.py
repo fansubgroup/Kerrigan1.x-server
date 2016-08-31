@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from multiprocessing import Process, Queue
+from multiprocessing.reduction import reduce_handle, rebuild_handle
 
 import Skateboard
 
@@ -59,7 +60,13 @@ def server(s_to_client, q_to_bank, PASSWD, addrnew):
             message_to_bank.append(unique_list_client_recv)
             
             #put into queue
-            q_to_bank.put(message_to_bank)
+            try:
+                
+                q_to_bank.put(s_client)
+                
+            except:
+                
+                print 'error'
             
             s_to_client.sendall('Ok, server get you name [%s]\nEnter the chat room...' % name_once)
             

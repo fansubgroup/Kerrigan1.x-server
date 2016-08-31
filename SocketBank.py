@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from multiprocessing import Queue
+from multiprocessing.reduction import reduce_handle, rebuild_handle
 
 def boss(q):
     
@@ -10,7 +11,7 @@ def boss(q):
     QUEUE_LIST = []
     
     while True:
-    
+        
         if not q.empty():
             
             data = q.get()
@@ -21,10 +22,6 @@ def boss(q):
                 
         for sb in SOCKETBANK:
             
-            uq_client_send = sb[3][0]
-            
-            uq_client_recv = sb[4][0]
-            
             if not uq_client_send.empty():
                 
                 unique_data = uq_client_send.get()
@@ -32,6 +29,10 @@ def boss(q):
                 if unique_data[0][0] == 'GET ALL THE ONLINE USERS':
                     
                     name_list = []
+                    
+                    uq_client_send = sb[3][0]
+                    
+                    uq_client_recv = sb[4][0]
                     
                     for i in SOCKETBANK:
                         
