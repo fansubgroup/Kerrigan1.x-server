@@ -5,10 +5,12 @@ import os
 import sys
 import select
 import time
+import shutil
 from multiprocessing import Process, Queue
 
 import ServerClone
 import SocketBank
+import StaffBank
 
 class ServerLoop:
     
@@ -22,11 +24,29 @@ class ServerLoop:
         
         self.PASSWD = passwd
         
+        self.PROCESS_ID = 1
+        
+        
+        
+    def remove_sock_temp(self):
+        
+        if os.path.isdir('temp/sock'):
+            
+            shutil.rmtree('temp/sock')
+            
+        os.mkdir('temp/sock')
+        
         
         
     def super_server(self):
         
-        q = Queue()
+        self.remove_sock_temp()
+        
+        q_to_staff = Queue()
+        
+        q_to_bank = Queue()
+        
+        q_back_bank = Queue()
         
         CONNECTION_LIST = []
         
@@ -36,11 +56,19 @@ class ServerLoop:
         
         server_socks.listen(self.MAXLISTEN)
         
-        bank = Process(target = SocketBank.boss, args = (q,))
+        # create a process for saving socket named socket bank
+        bank = Process(target = SocketBank.boss, args = (q_to_bank, q_back_bank))
         
         bank.daemon = True
         
         bank.start()
+        
+        # create a process for deal with command from Skateboard
+        bank_staff = Process(target = StaffBank.staff, args = (q_to_bank, q_back_bank, q_to_staff))
+        
+        bank_staff.daemon = True
+        
+        bank_staff.start()
         
         print "Server start at %s:%d..." % (self.HOST_IP, self.PORT)
         
@@ -50,12 +78,12 @@ class ServerLoop:
         
         while True:
             
-            #Get the list sockets which are ready to be read through select
+            # get the list sockets which are ready to be read through select
             reads, writes, errors = select.select(CONNECTION_LIST, [], [])
             
             for s in reads:
                 
-                #New connection
+                # new connection
                 if s == server_socks:
                     
                     socknew, addrnew = server_socks.accept()
@@ -70,13 +98,15 @@ class ServerLoop:
                     
                 else:
                     
-                    transfer_trouble = Process(target = ServerClone.server, args = (s, q, self.PASSWD, addrnew))
+                    transfer_trouble = Process(target = ServerClone.server, args = (s, q_to_staff, self.PASSWD, addrnew, self.PROCESS_ID))
                     
                     transfer_trouble.daemon = True
                     
                     transfer_trouble.start()
                     
                     CONNECTION_LIST.remove(s)
+                    
+                    self.PROCESS_ID += 1
 
 
 def main():

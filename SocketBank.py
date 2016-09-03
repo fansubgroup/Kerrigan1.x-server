@@ -1,59 +1,74 @@
 #!/usr/bin/env python
 
-from multiprocessing import Queue
-from multiprocessing.reduction import reduce_handle, rebuild_handle
-
-def boss(q):
+def boss(q_to_bank, q_back_bank):
     
-    # SOCKETBANK [[[command], [name], [client_socket], [unique_queue_client_send], [unique_queue_client_recv]], [...]]
+    # SOCKETBANK [[[name], [client_socket], [process_id]], [...]]
     SOCKETBANK = []
-    
-    QUEUE_LIST = []
     
     while True:
         
-        if not q.empty():
+        if not q_to_bank.empty():
             
-            data = q.get()
+            data = q_to_bank.get()
             
-            if data[0][0] == 'PUT CLONE SERVER SOCKET':
+            if data[0][0] == 'UPDATE':
                 
-                SOCKETBANK.append(data)
+                # message send to staff [[command], [name], [client_socket], [process_id]]
+                new_message = []
                 
-        for sb in SOCKETBANK:
-            
-            if not uq_client_send.empty():
+                new_message.append(data[1])
                 
-                unique_data = uq_client_send.get()
+                new_message.append(data[2])
                 
-                if unique_data[0][0] == 'GET ALL THE ONLINE USERS':
+                new_message.append(data[3])
+                
+                SOCKETBANK.append(new_message)
+                
+            if data[0][0] == 'GET ALL THE ONLINE USERS':
+                # message like [['GET ALL THE ONLINE USERS'], [process_id]]
+                
+                back_all = []
+                
+                back_all.append(['ALL'])
+                
+                back_all.append(data[1])
+                
+                name_list = []
+                
+                for lines in SOCKETBANK:
                     
-                    name_list = []
+                    name_list.append(lines[0])
                     
-                    uq_client_send = sb[3][0]
+                back_all.append(name_list)
+                
+                # back message [[ALL], [process_id], [name_list]]
+                q_back_bank.put(back_all)
+                
+            if data[0][0] == 'GET FRIEND':
+                
+                # message like [['GET FRIEND'], [process_id], [friend_list]]
+                want_name_list = data[2][0]
                     
-                    uq_client_recv = sb[4][0]
+                want_list = []
+                
+                want_list.append(['RETURN QUERY RESULT'])
+                
+                want_list.append(data[1])
+                
+                # SOCKETBANK [[[name], [client_socket], [process_id]], [...]]
+                for want_name in want_name_list:
                     
-                    for i in SOCKETBANK:
+                    for lines_name in SOCKETBANK:
                         
-                        name = i[1][0]
-                        
-                        name_list.append(name)
-                    
-                    uq_client_recv.put(name_list)
-                    
-                if unique_data[0][0] == 'GET FRIEND':
-                    
-                    socket_list = []
-                    
-                    friends_list = unique_data[1]
-                    
-                    for num in friends_list:
-                        
-                        array_friend = SOCKETBANK[num]
-                        
-                        f_socket = array_friend[2][0]
-                        
-                        socket_list.append(f_socket)
-                        
-                    uq_client_recv.put(socket_list)
+                        if want_name == lines_name[0][0]:
+                            
+                            small_list = []
+                            
+                            small_list.append(want_name)
+                            
+                            small_list.append(lines_name[1])
+                            
+                        want_list.append(lines_name[1])
+                            
+                # back message [[RETURN QUERY RESULT], [process_id], [[name, socket]]]
+                q_back_bank.put(want_list)

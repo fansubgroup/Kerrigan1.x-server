@@ -3,8 +3,11 @@
 import os
 import socket
 import select
+import json
 
-def smooth(s_to_client, q_send, q_recv, name):
+def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
+    
+    MAX_LISTEN = 3
     
     ONE_LIST = []
     
@@ -43,77 +46,73 @@ def smooth(s_to_client, q_send, q_recv, name):
                     
                     sock.sendall(ChatMenu)
                     
+                    print 'sock'
+                    
                     user_choice = sock.recv(4096)
                     
                     if user_choice == 'f':
                         
-                        find_string = 'GET ALL THE ONLINE USERS'
+                        find_list = [['GET ALL THE ONLINE USERS']]
                         
-                        find_list = []
+                        find_list.append([process_id])
                         
-                        find_list.append(find_string)
+                        # message like [['GET ALL THE ONLINE USERS'], [process_id]]
+                        q_to_staff.put(find_list)
                         
-                        #for compatibility with other lists with data, here we are still using a binary array
-                        send_1 = []
+                        staff_socket.listen(MAX_LISTEN)
                         
-                        send_1.append(find_list)
+                        cons, addr = staff_socket.accept()
                         
-                        q_send.put(send_1)
+                        online_user_json = cons.recv(4096)
                         
-                        online_user = q_recv.get()
+                        online_user = json.loads(online_user_json)
                         
-                        baby = True
+                        s_once = ''
                         
-                        while baby:
+                        db_key = 1
                         
-                            s_once = ''
+                        for i in online_user:
                             
-                            db_key = 1
+                            s_once = s_once + '%d - %s\n' % (db_key, i[0])
                             
-                            for i in online_user:
-                                
-                                s_once = s_once + '%d - %s\n' % (db_key, i[0])
-                                
-                                db_key += 1
-                                
-                            string_1 = "Find your friends in this list\nTo distinguish multiple friends with ',' etc '1,2,3'\nq - quit"
+                            db_key += 1
                             
-                            sock.sendall(s_once + string_1)
+                        string_1 = "Find your friends in this list\nTo distinguish multiple friends with ',' etc 'Jack,Piter'\nq - quit"
+                        
+                        sock.sendall(s_once + string_1)
+                        
+                        friends_key = sock.recv(4096)
+                        
+                        if friends_key == 'q':
                             
-                            friends_key = sock.recv(4096)
+                            sock.sendall("Quiting...")
                             
-                            if friends_key == 'q':
+                            baby = False
+                            
+                        else:
+                            
+                            friends_list = friends_key.split(',')
+                            
+                            get_list = [['GET FRIEND']]
+                            
+                            get_list.append([process_id])
+                            
+                            get_list.append(friends_list)
+                            
+                            # message like [['GET FRIEND'], [process_id], [friend_list]]
+                            q_to_staff.put(get_list)
+                            
+                            staff_socket.listen(MAX_LISTEN)
+                            
+                            gfs, gfr = staff_socket.accept()
+                            
+                            friend_sock = gfs.recv(4096)
+                            
+                            for s in friend_sock:
                                 
-                                sock.sendall("Quiting...")
+                                FriendCircle.append(s)
                                 
-                                baby = False
-                                
-                            else:
-                                
-                                friends_list = friends_key.split(',')
-                                
-                                get_friends_command = 'GET FRIEND'
-                                
-                                get_list = []
-                                
-                                get_list.append(get_friends_command)
-                                
-                                friend_send_list = []
-                                
-                                friend_send_list.append(get_list)
-                                
-                                friend_send_list.append(friends_list)
-                                
-                                #put the friend list in queue
-                                q_send.put(friend_send_list)
-                                
-                                friend_sock = q_recv.get()
-                                
-                                for s in friend_sock:
-                                    
-                                    FriendCircle.append(s)
-                                    
-                                sock.sendall("Ok, add successful")
+                            sock.sendall("Ok, add successful")
                                 
                         break
                         
