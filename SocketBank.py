@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import socket
+from multiprocessing.reduction import reduce_handle, rebuild_handle
+
 def boss(q_to_bank, q_back_bank):
     
     # SOCKETBANK [[[name], [client_socket], [process_id]], [...]]
@@ -11,17 +14,22 @@ def boss(q_to_bank, q_back_bank):
             
             data = q_to_bank.get()
             
-            if data[0][0] == 'UPDATE':
+            if data[0][0] == 'UPDATE CLIENT SOCKET':
                 
                 # message send to staff [[command], [name], [client_socket], [process_id]]
                 new_message = []
                 
                 new_message.append(data[1])
                 
-                new_message.append(data[2])
+                new_socket_fd = rebuild_handle(data[2][0])
+                
+                new_socket = socket.fromfd(new_socket_fd, socket.AF_INET, socket.SOCK_STREAM)
+                
+                new_message.append([new_socket])
                 
                 new_message.append(data[3])
                 
+                # [[name], [client_socket], [process_id]]
                 SOCKETBANK.append(new_message)
                 
             if data[0][0] == 'GET ALL THE ONLINE USERS':
@@ -46,29 +54,32 @@ def boss(q_to_bank, q_back_bank):
                 
             if data[0][0] == 'GET FRIEND':
                 
-                # message like [['GET FRIEND'], [process_id], [friend_list]]
-                want_name_list = data[2][0]
+                # message like [['GET FRIEND'], [process_id], friend_list]
+                friends_name_list = data[2]
                     
-                want_list = []
+                want_list = [['RETURN QUERY RESULT']]
                 
-                want_list.append(['RETURN QUERY RESULT'])
-                
+                #append the [process_id] in list
                 want_list.append(data[1])
                 
+                name_and_socket_list = []
+                
                 # SOCKETBANK [[[name], [client_socket], [process_id]], [...]]
-                for want_name in want_name_list:
+                for friends_name in friends_name_list:
                     
                     for lines_name in SOCKETBANK:
                         
-                        if want_name == lines_name[0][0]:
+                        if friends_name == lines_name[0][0]:
                             
-                            small_list = []
+                            temp_list = []
                             
-                            small_list.append(want_name)
+                            temp_list.append(lines_name[0][0])
                             
-                            small_list.append(lines_name[1])
+                            temp_list.append(lines_name[1][0])
                             
-                        want_list.append(lines_name[1])
+                            name_and_socket_list.append(temp_list)
                             
-                # back message [[RETURN QUERY RESULT], [process_id], [[name, socket]]]
+                want_list.append(name_and_socket_list)
+                
+                # back message [[RETURN QUERY RESULT], [process_id], [[name, socket], [name, socket], [...]]]
                 q_back_bank.put(want_list)

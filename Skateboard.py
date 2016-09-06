@@ -4,6 +4,7 @@ import os
 import socket
 import select
 import json
+from multiprocessing.reduction import rebuild_handle
 
 def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
     
@@ -46,7 +47,7 @@ def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
                     
                     sock.sendall(ChatMenu)
                     
-                    print 'sock'
+                    #print 'sock'
                     
                     user_choice = sock.recv(4096)
                     
@@ -77,7 +78,7 @@ def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
                             
                             db_key += 1
                             
-                        string_1 = "Find your friends in this list\nTo distinguish multiple friends with ',' etc 'Jack,Piter'\nq - quit"
+                        string_1 = "Enter your friends name\nEtc 'Jack,Piter'\nq - quit"
                         
                         sock.sendall(s_once + string_1)
                         
@@ -85,12 +86,14 @@ def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
                         
                         if friends_key == 'q':
                             
+                            # quit the Menu
                             sock.sendall("Quiting...")
                             
                             baby = False
                             
                         else:
                             
+                            # get the friend's socket friends_key like 'Jack, Piter'
                             friends_list = friends_key.split(',')
                             
                             get_list = [['GET FRIEND']]
@@ -99,18 +102,34 @@ def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
                             
                             get_list.append(friends_list)
                             
-                            # message like [['GET FRIEND'], [process_id], [friend_list]]
+                            # message like [['GET FRIEND'], [process_id], friend_list]
                             q_to_staff.put(get_list)
                             
                             staff_socket.listen(MAX_LISTEN)
                             
                             gfs, gfr = staff_socket.accept()
                             
-                            friend_sock = gfs.recv(4096)
+                            query_json = gfs.recv(4096)
                             
-                            for s in friend_sock:
+                            query_result = json.loads(query_json)
+                            
+                            # deal with the origin data
+                            
+                            print len(query_result)
+                            
+                            # data like [[RETURN QUERY RESULT], [process_id], [[name, socket], [name, socket], [...]]]
+                            name_socket_list = query_result[2]
+                            
+                            # name_socket_list like [[name, socket], [name, socket], [...]]
+                            for s in name_socket_list:
                                 
-                                FriendCircle.append(s)
+                                print s[0]
+                                
+                                fd = rebuild_handle(s[1])
+                                
+                                fd_socket = socket.fromfd(fd, socket.AF_INET, socket.SOCK_STREAM)
+                                
+                                FriendCircle.append(fd_socket)
                                 
                             sock.sendall("Ok, add successful")
                                 
@@ -124,7 +143,7 @@ def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
                         
                     elif user_choice == 'Q':
                         
-                        scok.sendall('Thank you useing')
+                        scok.sendall('Thank you using')
                         
                         search_db = sqlite3.connect('temp/server.db')
                         
@@ -139,3 +158,7 @@ def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
                         search_db.close()
                         
                         os._exit()
+                        
+            else:
+                
+                sock.sendall('No data')
