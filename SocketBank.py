@@ -75,7 +75,9 @@ def boss(q_to_bank, q_back_bank):
                             
                             temp_list.append(lines_name[0][0])
                             
-                            temp_list.append(lines_name[1][0])
+                            hh = reduce_handle(lines_name[1][0].fileno())
+                            
+                            temp_list.append(hh)
                             
                             name_and_socket_list.append(temp_list)
                             
