@@ -33,7 +33,7 @@ def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
             
             data = sock.recv(4096)
             
-            if data:
+            if len(data):
                 
                 if data != '##':
                     
@@ -70,15 +70,15 @@ def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
                         
                         s_once = ''
                         
-                        db_key = 1
+                        num_key = 1
                         
                         for i in online_user:
                             
-                            s_once = s_once + '%d - %s\n' % (db_key, i[0])
+                            s_once = s_once + '%d - %s\n' % (num_key, i[0])
                             
-                            db_key += 1
+                            num_key += 1
                             
-                        string_1 = "Enter your friends name\nEtc 'Jack,Piter'\nq - quit"
+                        string_1 = "Enter your friends name\nEtc 'Jack, Piter'\nq - quit"
                         
                         sock.sendall(s_once + string_1)
                         
@@ -143,22 +143,19 @@ def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
                         
                     elif user_choice == 'Q':
                         
-                        scok.sendall('Thank you using')
+                        sock.sendall('Thank you for using')
                         
-                        search_db = sqlite3.connect('temp/server.db')
+                        Quit_list = [['REMOVE MY NAME']]
                         
-                        search_cursor = search_db.cursor()
+                        Quit_list.append([process_id])
                         
-                        search_cursor.execute("delete from online where name =" + name)
-                        
-                        search_db.commit()
-                        
-                        search_cursor.close()
-                        
-                        search_db.close()
+                        q_to_staff.put(Quit_list)
                         
                         os._exit()
                         
+                    else:
+                        
+                        sock.sendall('Enter q to escape the menu')
             else:
                 
                 sock.sendall('No data')
