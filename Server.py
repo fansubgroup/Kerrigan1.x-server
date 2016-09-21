@@ -6,11 +6,12 @@ import sys
 import select
 import time
 import shutil
-from multiprocessing import Process, Queue
+import json
+from multiprocessing import Process, Pipe
+from multiprocessing import Manager
 
 import ServerClone
-import SocketBank
-import StaffBank
+import ExchangeCenter
 
 class ServerLoop:
     
@@ -42,33 +43,33 @@ class ServerLoop:
         
         self.remove_sock_temp()
         
-        q_to_staff = Queue()
-        
-        q_to_bank = Queue()
-        
-        q_back_bank = Queue()
-        
         CONNECTION_LIST = []
         
-        server_socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_pipe_update, client_pipe_update = Pipe()
         
+        server_socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        mgr = Manager()
+
+        share_list = mgr.list()
+
+        to_megaphone_list = mgr.list()
+
+        ec0 = Process(target = ExchangeCenter.exchangecenterstaff, args = (server_pipe_update, share_list, to_megaphone_list))
+
+        ec0.daemon = True
+
+        ec0.start()
+
+        ec1 = Process(target = ExchangeCenter.megaphone, args = (share_list, to_megaphone_list))
+
+        ec1.daemon = True
+
+        ec1.start()
+
         server_socks.bind((self.HOST_IP, self.PORT))
         
         server_socks.listen(self.MAXLISTEN)
-        
-        # create a process for saving socket named socket bank
-        bank = Process(target = SocketBank.boss, args = (q_to_bank, q_back_bank))
-        
-        bank.daemon = True
-        
-        bank.start()
-        
-        # create a process for deal with command from Skateboard
-        bank_staff = Process(target = StaffBank.staff, args = (q_to_bank, q_back_bank, q_to_staff))
-        
-        bank_staff.daemon = True
-        
-        bank_staff.start()
         
         print "Server start at %s:%d..." % (self.HOST_IP, self.PORT)
         
@@ -97,8 +98,8 @@ class ServerLoop:
                     log_file.writelines("ip:%s, port:%s want to connected at %s\n" % (addrnew[0], addrnew[1], now_time))
                     
                 else:
-                    
-                    transfer_trouble = Process(target = ServerClone.server, args = (s, q_to_staff, self.PASSWD, addrnew, self.PROCESS_ID))
+
+                    transfer_trouble = Process(target = ServerClone.server, args = (s, self.PASSWD, addrnew, self.PROCESS_ID, client_pipe_update))
                     
                     transfer_trouble.daemon = True
                     
@@ -112,6 +113,7 @@ class ServerLoop:
 def main():
     
     chat_init = ServerLoop('127.0.0.1', 8001, '11')
+    
     chat_init.super_server()
     
 if __name__ == "__main__":

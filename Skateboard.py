@@ -6,7 +6,7 @@ import select
 import json
 from multiprocessing.reduction import rebuild_handle
 
-def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
+def smooth(s_to_client, pipe, name, process_id):
     
     MAX_LISTEN = 3
     
@@ -14,9 +14,8 @@ def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
     
     ONE_LIST.append(s_to_client)
     
-    FriendCircle = []
-    
     ChatMenu = ("f - Find friend in this server\n"
+                "c <somebody name>"
                 "q - Quit menu\n"
                 "Q - Quit Chat")
     
@@ -37,15 +36,19 @@ def smooth(s_to_client, q_to_staff, name, process_id, staff_socket):
                 
                 if data != '##':
                     
-                    sock.sendall(Skateboard_say)
-                    
-                    for s in FriendCircle:
-                        
-                        s.sendall(data)
+                    send_to_ec_message = ['MESSAGE']
+
+                    send_to_ec_message.append(data)
+
+                    send_to_ec_message.append(name)
+
+                    pipe.send(send_to_ec_message)
                 
                 elif data == '##':
+
+                    fuck_json_1 = json.dumps(['Chat Menu', ChatMenu])
                     
-                    sock.sendall(ChatMenu)
+                    sock.sendall(fuck_json_1)
                     
                     #print 'sock'
                     

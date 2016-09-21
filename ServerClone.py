@@ -5,67 +5,59 @@ from multiprocessing.reduction import reduce_handle, rebuild_handle
 import os
 import socket
 import time
+import threading
+import json
 
 import Skateboard
 
-def server(s_to_client, q_to_staff, PASSWD, addrnew, process_id):
+def server(s_to_client, PASSWD, addrnew, process_id, client_pipe):
     
     data = s_to_client.recv(4096)
     
     SERVERINFO = '@Author: East Evil\nDefault Message From Server\nAnd You Can Change This Information By Youself'
     
-    staff_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    
-    staff_socket.bind('temp/sock/socket_%d' % process_id)
-    
     if data:
         
         #print data
+
+        fuck_json_0 = json.dumps(['', "%s\nPlease enter passwd:" % SERVERINFO])
         
-        s_to_client.sendall("%s\nPlease enter passwd:" % SERVERINFO)
+        s_to_client.sendall(fuck_json_0)
         
         data_0 = s_to_client.recv(4096)
         
         if data_0 == PASSWD:
+
+            fuck_json_x = json.dumps(['', 'Permit access to login the server...\nInput a name for show you friends'])
             
-            s_to_client.sendall('Permit access to login the server...\nInput a name for show you friends')
+            s_to_client.sendall()
             
             name_once = s_to_client.recv(4096)
             
-            # message to staff [0][0] is command
-            message_to_staff = [['UPDATE CLIENT SOCKET']]
+            # message to staff [0] is command
+            message_to_ec = ['UPDATE CLIENT SOCKET']
             
-            # message to staff [1][0] is socket owner name
-            name_list = []
+            # message to staff [1] is socket owner name
+            message_to_ec.append(name_once)
             
-            name_list.append(name_once)
-            
-            message_to_staff.append(name_list)
-            
-            # message to staff [2][0] is socket
-            sock_list = []
-            
+            # message to staff [2] is socket
             s_to_client_reduction = reduce_handle(s_to_client.fileno())
             
-            sock_list.append(s_to_client_reduction)
+            message_to_ec.append(s_to_client_reduction)
             
-            message_to_staff.append(sock_list)
+            # messaget to staff [3] is socket to recveive result from staff
+            message_to_ec.append(process_id)
             
-            # messaget to staff [3][0] is socket to recveive result from staff
-            result_list = []
+            #                        0        1     2              3
+            # message send to ec [command, name, client_socket, process_id]
+            # put into pipe
+            client_pipe.send(message_to_staff)
+
+            fuck_json = json.dumps(['Server Room', 'Ok, server get you name [%s]\nEnter the chat room...' % name_once])
             
-            result_list.append(process_id)
+            s_to_client.sendall(fuck_json)
             
-            #                          0          1       2                3
-            # message send to staff [[command], [name], [client_socket], [process_id]]
-            message_to_staff.append(result_list)
-            
-            # put into queue
-            q_to_staff.put(message_to_staff)
-            
-            s_to_client.sendall('Ok, server get you name [%s]\nEnter the chat room...' % name_once)
-            
-            Skateboard.smooth(s_to_client, q_to_staff, name_once, process_id, staff_socket)
+            Skateboard.smooth(s_to_client, client_pipe, name_once, process_id)
             
         else:
             
