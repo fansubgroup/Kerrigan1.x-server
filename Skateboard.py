@@ -98,18 +98,18 @@ def smooth(s_to_client, pipe, name, process_id):
                             # get the friend's socket friends_key like 'Jack, Piter'
                             friends_list = friends_key.split(',')
 
-                            get_list = [['GET FRIEND']]
+                            get_list = ['GET FRIEND']
 
-                            get_list.append([process_id])
+                            get_list.append(process_id)
 
                             get_list.append(friends_list)
 
-                            # message like [['GET FRIEND'], [process_id], friend_list]
-                            q_to_staff.put(get_list)
+                            # message like ['GET FRIEND', process_id, friend_list]
+                            pipe.send(get_list)
 
-                            staff_socket.listen(MAX_LISTEN)
+                            ec_socket.listen(MAX_LISTEN)
 
-                            gfs, gfr = staff_socket.accept()
+                            gfs,  = ec_socket.accept()
 
                             query_json = gfs.recv(4096)
 
