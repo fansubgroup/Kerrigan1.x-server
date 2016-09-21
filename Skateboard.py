@@ -15,7 +15,7 @@ def smooth(s_to_client, pipe, name, process_id):
     ONE_LIST.append(s_to_client)
     
     ChatMenu = ("f - Find friend in this server\n"
-                "c <somebody name>"
+                "c <somebody name> - Chat with <somebody name>\n"
                 "q - Quit menu\n"
                 "Q - Quit Chat")
 
@@ -80,7 +80,7 @@ def smooth(s_to_client, pipe, name, process_id):
 
                             num_key += 1
 
-                        string_1 = "Enter your friends name\nEtc 'Jack, Piter'\nq - quit"
+                        string_1 = "Enter your friends name\nLike 'Jack, Piter'\nq - quit"
 
                         user_json = json.dumps(['Friends list', s_once + string_1])
 
@@ -89,11 +89,20 @@ def smooth(s_to_client, pipe, name, process_id):
                         friends_key = sock.recv(4096)
 
                         if friends_key == 'q':
-
                             # quit the Menu
-                            sock.sendall("Quiting...")
+
+                            qqq_json = json.dumps('', 'Quiting...')
+
+                            sock.sendall(qqq_json)
 
                             baby = False
+
+                        elif friends_key == '##':
+                            # Chat Menu again
+
+                            t_json = json.dumps(['', 'Please quit the menu first, now quiting friends list...'])
+
+                            sock.sendall(t_json)
 
                         else:
 

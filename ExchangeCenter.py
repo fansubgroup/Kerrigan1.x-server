@@ -89,11 +89,11 @@ def exchangecenterstaff(server_pipe_update, user_list, to_tegaphone_list):
 
             all_user_json = json.dumps(all_user_list)
 
-            print(all_user_list)
+            # print(all_user_list)
 
             aul_socket.send(all_user_json)
 
-            print(all_user_json)
+            # print(all_user_json)
 
 
 
@@ -119,19 +119,17 @@ def megaphone(user_list, to_megaphone_list):
 
                         if len(fl):
 
-                            send_message(fl, each_one[0], each_one[1])
+                            send_message(fl, each_one[0], each_one[1], user_list)
 
                         else:
 
-                            else_message = [[each_one[0]], 'server', 'You not have friends yet, add a friends with ## first']
-
-                            send_message(else_message)
+                            send_message([each_one[0]], 'server', 'You not have friends yet, add a friends with ## first', user_list)
 
                 to_megaphone_list.remove(each_one)
 
 
 
-def send_message(friends_list, name, want_to_say):
+def send_message(friends_list, name, want_to_say, user_list):
 
     # send the message to allow friends
 
@@ -146,8 +144,18 @@ def send_message(friends_list, name, want_to_say):
 
                 all_friends.append(a[1])
 
+            elif a[0] == name:
+
+                self_socket = a[1]
+
     if len(all_friends):
 
         for s in all_friends:
 
-            s.sendall(['From %s' % name, want_to_say])
+            jj_json = json.dumps(['From %s' % name, want_to_say])
+
+            s.sendall(jj_json)
+
+    self_json = json.dumps(['Check', 'Message arrived'])
+
+    self_socket.sendall(self_json)
