@@ -82,7 +82,9 @@ def smooth(s_to_client, pipe, name, process_id):
 
                         string_1 = "Enter your friends name\nEtc 'Jack, Piter'\nq - quit"
 
-                        sock.sendall(s_once + string_1)
+                        user_json = json.dumps(['Friends list', s_once + string_1])
+
+                        sock.sendall(user_json)
 
                         friends_key = sock.recv(4096)
 
@@ -119,7 +121,6 @@ def smooth(s_to_client, pipe, name, process_id):
 
                             print len(query_result)
 
-                            # data like [[RETURN QUERY RESULT], [process_id], [[name, socket], [name, socket], [...]]]
                             name_socket_list = query_result[2]
 
                             # name_socket_list like [[name, socket], [name, socket], [...]]

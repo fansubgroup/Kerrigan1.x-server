@@ -93,6 +93,8 @@ def exchangecenterstaff(server_pipe_update, user_list, to_tegaphone_list):
 
             aul_socket.send(all_user_json)
 
+            print(all_user_json)
+
 
 
 def megaphone(user_list, to_megaphone_list):
