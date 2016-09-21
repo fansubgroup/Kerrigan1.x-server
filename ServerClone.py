@@ -30,7 +30,7 @@ def server(s_to_client, PASSWD, addrnew, process_id, client_pipe):
 
             fuck_json_x = json.dumps(['', 'Permit access to login the server...\nInput a name for show you friends'])
             
-            s_to_client.sendall()
+            s_to_client.sendall(fuck_json_x)
             
             name_once = s_to_client.recv(4096)
             
@@ -51,7 +51,7 @@ def server(s_to_client, PASSWD, addrnew, process_id, client_pipe):
             #                        0        1     2              3
             # message send to ec [command, name, client_socket, process_id]
             # put into pipe
-            client_pipe.send(message_to_staff)
+            client_pipe.send(message_to_ec)
 
             fuck_json = json.dumps(['Server Room', 'Ok, server get you name [%s]\nEnter the chat room...' % name_once])
             
@@ -62,12 +62,16 @@ def server(s_to_client, PASSWD, addrnew, process_id, client_pipe):
         else:
             
             print 'Error password'
+
+            log_file = open('temp/log-server.log')
             
             t_0 = time.localtime()
             
             now_time_0 = "%d-%d-%d-%d:%d:%d" % (t_0.tm_year, t_0.tm_mon, t_0.tm_mday, t_0.tm_hour, t_0.tm_min, t_0.tm_sec)
             
             log_file.writelines("ip:%s, port:%s failed to login at %s\n" % (addrnew[0], addrnew[1], now_time_0))
+
+            log_file.close()
             
             s_to_client.sendall("Have no permission to enter the server")
             
