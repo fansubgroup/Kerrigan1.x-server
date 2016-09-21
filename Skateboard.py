@@ -8,7 +8,7 @@ from multiprocessing.reduction import rebuild_handle
 
 def smooth(s_to_client, pipe, name, process_id):
     
-    MAX_LISTEN = 3
+    MAX_LISTEN = 1
     
     ONE_LIST = []
     
@@ -18,12 +18,11 @@ def smooth(s_to_client, pipe, name, process_id):
                 "c <somebody name>"
                 "q - Quit menu\n"
                 "Q - Quit Chat")
-    
-    Skateboard_say = ("This is Customer Service Mr.Skateboard\n"
-                      "You could use the ## to enter the <Chat Menu>\n"
-                      "You ars talking with a Server Machine."
-                      "Please search a friend")
-    
+
+    ec_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+
+    ec_socket.bind('temp/sock/sk-%d.sock' % process_id)
+
     while True:
     
         reads, writes, errors = select.select(ONE_LIST, [], [])
@@ -43,122 +42,132 @@ def smooth(s_to_client, pipe, name, process_id):
                     send_to_ec_message.append(name)
 
                     pipe.send(send_to_ec_message)
-                
+
                 elif data == '##':
 
                     fuck_json_1 = json.dumps(['Chat Menu', ChatMenu])
-                    
+
                     sock.sendall(fuck_json_1)
-                    
+
                     #print 'sock'
-                    
+
                     user_choice = sock.recv(4096)
-                    
+
                     if user_choice == 'f':
-                        
-                        find_list = [['GET ALL THE ONLINE USERS']]
-                        
-                        find_list.append([process_id])
-                        
-                        # message like [['GET ALL THE ONLINE USERS'], [process_id]]
-                        q_to_staff.put(find_list)
-                        
-                        staff_socket.listen(MAX_LISTEN)
-                        
-                        cons, addr = staff_socket.accept()
-                        
+
+                        find_list = ['GET ALL THE ONLINE USERS']
+
+                        find_list.append(process_id)
+
+                        # message like ['GET ALL THE ONLINE USERS', process_id]
+                        pipe.send(find_list)
+
+                        ec_socket.listen(MAX_LISTEN)
+
+                        cons, _ = ec_socket.accept()
+
                         online_user_json = cons.recv(4096)
-                        
+
                         online_user = json.loads(online_user_json)
-                        
+
                         s_once = ''
-                        
+
                         num_key = 1
-                        
+
                         for i in online_user:
-                            
+
                             s_once = s_once + '%d - %s\n' % (num_key, i[0])
-                            
+
                             num_key += 1
-                            
+
                         string_1 = "Enter your friends name\nEtc 'Jack, Piter'\nq - quit"
-                        
+
                         sock.sendall(s_once + string_1)
-                        
+
                         friends_key = sock.recv(4096)
-                        
+
                         if friends_key == 'q':
-                            
+
                             # quit the Menu
                             sock.sendall("Quiting...")
-                            
+
                             baby = False
-                            
+
                         else:
-                            
+
                             # get the friend's socket friends_key like 'Jack, Piter'
                             friends_list = friends_key.split(',')
-                            
+
                             get_list = [['GET FRIEND']]
-                            
+
                             get_list.append([process_id])
-                            
+
                             get_list.append(friends_list)
-                            
+
                             # message like [['GET FRIEND'], [process_id], friend_list]
                             q_to_staff.put(get_list)
-                            
+
                             staff_socket.listen(MAX_LISTEN)
-                            
+
                             gfs, gfr = staff_socket.accept()
-                            
+
                             query_json = gfs.recv(4096)
-                            
+
                             query_result = json.loads(query_json)
-                            
+
                             # deal with the origin data
-                            
+
                             print len(query_result)
-                            
+
                             # data like [[RETURN QUERY RESULT], [process_id], [[name, socket], [name, socket], [...]]]
                             name_socket_list = query_result[2]
-                            
+
                             # name_socket_list like [[name, socket], [name, socket], [...]]
                             for s in name_socket_list:
-                                
+
                                 print s[0]
-                                
+
                                 fd = rebuild_handle(s[1])
-                                
+
                                 fd_socket = socket.fromfd(fd, socket.AF_INET, socket.SOCK_STREAM)
-                                
+
                                 FriendCircle.append(fd_socket)
-                                
+
                             sock.sendall("Ok, add successful")
-                                
+
                         break
-                        
+
                     elif user_choice == 'q':
-                        
-                        sock.sendall('Quiting...')
-                        
+
+                        qq_json = json.dumps(['', 'Quiting...'])
+
+                        sock.sendall(qq_json)
+
                         break
-                        
+
                     elif user_choice == 'Q':
-                        
-                        sock.sendall('Thank you for using')
-                        
-                        Quit_list = [['REMOVE MY NAME']]
-                        
-                        Quit_list.append([process_id])
-                        
-                        q_to_staff.put(Quit_list)
-                        
+
+                        q_json = json.dumps(['Quiting'], 'Thank you for using')
+
+                        sock.sendall(q_json)
+
+                        Quit_list = ['REMOVE MY NAME']
+
+                        Quit_list.append(name)
+
+                        # Quit_list like ['REMOVE MY NAME', name]
+
+                        pipe.send(Quit_list)
+
                         os._exit()
-                        
+
                     else:
-                        
-                        sock.sendall('Enter q to escape the menu')
+
+                        escape_json = json.dumps(['', 'Enter q to escape the menu'])
+
+                        sock.sendall(escape_json)
             else:
-                
-                sock.sendall('No data')
+
+                fuck_error = json.dumps(['Error', 'No data'])
+
+                sock.sendall(fuck_error)
