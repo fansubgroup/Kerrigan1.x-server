@@ -7,13 +7,13 @@ import json
 from multiprocessing.reduction import rebuild_handle
 
 def smooth(s_to_client, pipe, name, process_id):
-    
+
     MAX_LISTEN = 1
-    
+
     ONE_LIST = []
-    
+
     ONE_LIST.append(s_to_client)
-    
+
     ChatMenu = ("f - Find friend in this server\n"
                 "a <Friend Name> - Add a friend in you friend list"
                 "c <Friend Name> - Chat with <Friend Name>\n"
@@ -25,15 +25,15 @@ def smooth(s_to_client, pipe, name, process_id):
     ec_socket.bind('temp/sock/sk-%d.sock' % process_id)
 
     while True:
-    
+
         reads, writes, errors = select.select(ONE_LIST, [], [])
-        
+
         for sock in reads:
-            
+
             data = sock.recv(4096)
-            
+
             if len(data):
-                
+
                 if data != '##':
                     
                     send_to_ec_message = ['MESSAGE']

@@ -6,7 +6,7 @@ import json
 from multiprocessing.reduction import reduce_handle, rebuild_handle
 
 
-def exchangecenterstaff(server_pipe_update, user_list, to_tegaphone_list):
+def exchangecenterstaff(server_pipe_update, RELATION_TABLE, to_megaphone_list):
 
     # waitting for recv the message from pipe
 
@@ -29,9 +29,11 @@ def exchangecenterstaff(server_pipe_update, user_list, to_tegaphone_list):
 
             client_socket = socket.fromfd(socket_fd, socket.AF_INET, socket.SOCK_STREAM)
 
-            # user_list_one will like [name, socket, friends_list]
+            # user_list_one will like [name, socket, chat_now_friend, long_time_friend]
 
-            friends_list = []
+            chat_now_friend = []
+
+            long_time_friend = []
 
             user_list_one = []
 
@@ -39,14 +41,16 @@ def exchangecenterstaff(server_pipe_update, user_list, to_tegaphone_list):
 
             user_list_one.append(client_socket)
 
-            user_list_one.append(friends_list)
+            user_list_one.append(chat_now_friend)
 
-            user_list.append(user_list_one)
+            user_list_one.append(long_time_friend)
+
+            RELATION_TABLE.append(user_list_one)
 
         if server_recv[0] == 'MESSAGE':
             #               0        1            2
             # message like [command, want_to_say, self_name]
-            # append it in to_tegaphone_list
+            # append it in to_megaphone_list
 
             name_say_list = []
 
@@ -54,32 +58,32 @@ def exchangecenterstaff(server_pipe_update, user_list, to_tegaphone_list):
 
             name_say_list.append(server_recv[1])
 
-            # to_tegaphone_list like [self_name, want_to_say]
+            # to_megaphone_list like [self_name, want_to_say]
 
-            to_tegaphone_list.append(name_say_list)
+            to_megaphone_list.append(name_say_list)
 
         if server_recv[0] == 'REMOVE MY NAME':
             #
             # message like [command, name]
-            # delete the item about the name in user_list
-            # share list like [name, socket, friends_list]
+            # delete the item about the name in RELATION_TABLE
+            # share list like [name, socket, chat_now_friend, long_time_friend]
 
-            for x in user_list:
+            for x in RELATION_TABLE:
 
                 if x[0] == server_recv[1]:
 
-                    user_list.remove(x)
+                    RELATION_TABLE.remove(x)
 
         if server_recv[0] == 'GET ALL THE ONLINE USERS':
             #
             # return the server online user name
             #                   0                           1
             # server_recv like ['GET ALL THE ONLINE USERS', process_id]
-            # user_list like [name, socket, friends_list]
+            # RELATION_TABLE like [name, socket, chat_now_friend, long_time_friend]
 
             all_user_list = []
 
-            for aul in user_list:
+            for aul in RELATION_TABLE:
 
                 all_user_list.append(aul[0])
 
@@ -99,11 +103,11 @@ def exchangecenterstaff(server_pipe_update, user_list, to_tegaphone_list):
             #
             # send a invitation to friends
             # server_recv message like ['ADD FRIEND', name, friend_list]
-            # user_list will like [name, socket, friends_list]
+            # RELATION_TABLE will like [name, socket, chat_now_friend, long_time_friend]
 
             for want_name in server_recv[2]:
 
-                for user_each in user_list:
+                for user_each in RELATION_TABLE:
 
                     if want_name == user_each[0]:
 
@@ -117,83 +121,85 @@ def exchangecenterstaff(server_pipe_update, user_list, to_tegaphone_list):
 
                         if every_ack == 'y' or 'yes' or 'Yes' or 'YES' or 'YEs' or 'YeS' or 'yEs' or 'yES':
 
-                            add_friends_list(server_recv[1], want_name, user_list)
+                            add_friends_list(server_recv[1], want_name, RELATION_TABLE)
 
-                            add_friends_list(want_name, server_recv[1], user_list)
-
-
-
-def add_friends_list(source_name, target_name, user_list):
-
-    # add target_name in source_name friends_list
-
-    for uu in user_list:
-        # user_list will like [name, socket, friends_list]
-        if uu[0] == source_name:
-
-            uu[2].append(target_name)
+                            add_friends_list(want_name, server_recv[1], RELATION_TABLE)
 
 
 
-def megaphone(user_list, to_megaphone_list):
+def add_friends_list(source_name, target_name, RELATION_TABLE):
 
-    # pass the message between the client
+    # add target_name in source_name self chat_now_friend and long_time_friend
+
+    for r in RELATION_TABLE:
+        #                           0     1       2                3
+        # RELATION_TABLE will like [name, socket, chat_now_friend, long_time_friend]
+
+        if r[0] == source_name:
+
+            # r[0] is the RELATION_TABLE name, find the source_name in RELATION_TABLE
+            # add the target_name in chat_now_friend and long_time_friend
+
+            r[2].append(target_name)
+
+            r[3].append(target_name)
+
+
+
+def megaphone(RELATION_TABLE, to_megaphone_list):
+
+    # pass the message to chat_now_friend
     #                         1          2
-    # to_tegaphone_list like [self_name, want_to_say]
+    # to_megaphone_list like [self_name, want_to_say]
 
     while True:
 
         if len(to_megaphone_list):
 
-            for each_one in to_megaphone_list:
-                # each_one like [name, want_to_say]
+            for each_message in to_megaphone_list:
+                # each_message like [self_name, want_to_say]
 
-                for all_user in user_list:
-                    # like [name, socket, friends_list]
+                for all_user in RELATION_TABLE:
+                    # all_user like [name, socket, chat_now_friend, long_time_friend]
 
-                    if all_user[0] == each_one[0]:
+                    if all_user[0] == each_message[0]:
+                        # all_user[0] is user name
+                        # each_message[0] is sender name
+                        # search RELATION_TABLE to find the sender name
 
-                        fl = all_user[2]
+                        # cnf is the chat_now_friend list
+                        cnf = all_user[2]
 
-                        if len(fl):
+                        if len(cnf):
+                            # if the chat_now_friend list have friend now
 
-                            send_message(fl, each_one[0], each_one[1], user_list)
+                            for now_friend in chat_now_friend:
+                                # get each want to send message friend
+
+                                for all_user_0 in RELATION_TABLE:
+                                    # all_user_0 like [name, socket, chat_now_friend, long_time_friend]
+
+                                    if now_friend == all_user_0[0]:
+
+                                        now_friend_sock = all_user_0[1]
+
+                                        now_friend_json = json.dumps(['From %s' % each_message[0], each_message[1]])
+
+                                        now_friend_sock.sendall(now_friend_json)
 
                         else:
 
-                            send_message([each_one[0]], 'server', 'You not have friends yet, add a friends with ## first', user_list)
+                            have_no_friend = each_message[0]
+                            # return a message to sender him don not have friend yet
 
-                to_megaphone_list.remove(each_one)
+                            for all_user_1 in RELATION_TABLE:
+                                # all_user_1 like [name, socket, chat_now_friend, long_time_friend]
 
+                                if have_no_friend == all_user_1[0]:
 
+                                    no_friend_sock = all_user_1[1]
 
-def send_message(friends_list, name, want_to_say, user_list):
+                                    no_friend_json = json.dumps(['Error', 'Please add a friend first'])
 
-    # send the message to allow friends
+                to_megaphone_list.remove(each_message)
 
-    all_friends = []
-
-    for f in friends_list:
-
-        for a in user_list:
-            # like [name, socket, friends_list]
-
-            if a[0] == f:
-
-                all_friends.append(a[1])
-
-            elif a[0] == name:
-
-                self_socket = a[1]
-
-    if len(all_friends):
-
-        for s in all_friends:
-
-            jj_json = json.dumps(['From %s' % name, want_to_say])
-
-            s.sendall(jj_json)
-
-    self_json = json.dumps(['Check', 'Message arrived'])
-
-    self_socket.sendall(self_json)
