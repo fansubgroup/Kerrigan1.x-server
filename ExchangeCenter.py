@@ -29,19 +29,19 @@ def exchangecenterstaff(server_pipe_update, user_list, to_tegaphone_list):
 
             client_socket = socket.fromfd(socket_fd, socket.AF_INET, socket.SOCK_STREAM)
 
-            # share_list_one will like [name, socket, friends_list]
+            # user_list_one will like [name, socket, friends_list]
 
             friends_list = []
 
-            share_list_one = []
+            user_list_one = []
 
-            share_list_one.append(server_recv[1])
+            user_list_one.append(server_recv[1])
 
-            share_list_one.append(client_socket)
+            user_list_one.append(client_socket)
 
-            share_list_one.append(friends_list)
+            user_list_one.append(friends_list)
 
-            user_list.append(share_list_one)
+            user_list.append(user_list_one)
 
         if server_recv[0] == 'MESSAGE':
             #               0        1            2
@@ -94,6 +94,44 @@ def exchangecenterstaff(server_pipe_update, user_list, to_tegaphone_list):
             aul_socket.send(all_user_json)
 
             # print(all_user_json)
+
+        if server_recv[0] == 'ADD FRIEND':
+            #
+            # send a invitation to friends
+            # server_recv message like ['ADD FRIEND', name, friend_list]
+            # user_list will like [name, socket, friends_list]
+
+            for want_name in server_recv[2]:
+
+                for user_each in user_list:
+
+                    if want_name == user_each[0]:
+
+                        every_socket = want_name[1]
+
+                        every_json = json.dumps(['%s want to add you as friends[yes/no]' % server_recv[1], ''])
+
+                        every_socket.send(every_json)
+
+                        every_ack = every_socket.recv(1024)
+
+                        if every_ack == 'y' or 'yes' or 'Yes' or 'YES' or 'YEs' or 'YeS' or 'yEs' or 'yES':
+
+                            add_friends_list(server_recv[1], want_name, user_list)
+
+                            add_friends_list(want_name, server_recv[1], user_list)
+
+
+
+def add_friends_list(source_name, target_name, user_list):
+
+    # add target_name in source_name friends_list
+
+    for uu in user_list:
+        # user_list will like [name, socket, friends_list]
+        if uu[0] == source_name:
+
+            uu[2].append(target_name)
 
 
 

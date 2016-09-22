@@ -15,7 +15,8 @@ def smooth(s_to_client, pipe, name, process_id):
     ONE_LIST.append(s_to_client)
     
     ChatMenu = ("f - Find friend in this server\n"
-                "c <somebody name> - Chat with <somebody name>\n"
+                "a <Friend Name> - Add a friend in you friend list"
+                "c <Friend Name> - Chat with <Friend Name>\n"
                 "q - Quit menu\n"
                 "Q - Quit Chat")
 
@@ -104,23 +105,27 @@ def smooth(s_to_client, pipe, name, process_id):
 
                             sock.sendall(t_json)
 
-                        else:
+                        elif friends_key[0] == 'a':
 
                             # get the friend's socket friends_key like 'Jack, Piter'
-                            friends_list = friends_key.split(',')
+                            friends_list = friends_key[2:-1].split(',')
 
-                            get_list = ['GET FRIEND']
+                            for st in friends_list:
 
-                            get_list.append(process_id)
+                                st.strip()
+
+                            get_list = ['ADD FRIEND']
+
+                            get_list.append(name)
 
                             get_list.append(friends_list)
 
-                            # message like ['GET FRIEND', process_id, friend_list]
+                            # message like ['ADD FRIEND', name, friend_list]
                             pipe.send(get_list)
 
                             ec_socket.listen(MAX_LISTEN)
 
-                            gfs,  = ec_socket.accept()
+                            gfs, _ = ec_socket.accept()
 
                             query_json = gfs.recv(4096)
 
@@ -145,15 +150,11 @@ def smooth(s_to_client, pipe, name, process_id):
 
                             sock.sendall("Ok, add successful")
 
-                        break
-
                     elif user_choice == 'q':
 
                         qq_json = json.dumps(['', 'Quiting...'])
 
                         sock.sendall(qq_json)
-
-                        break
 
                     elif user_choice == 'Q':
 
