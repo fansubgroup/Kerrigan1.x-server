@@ -28,7 +28,7 @@ def smooth(s_to_client, pipe, name, process_id):
 
             data = sock.recv(4096)
 
-            print(data)
+            print data
 
             if len(data):
 
@@ -116,15 +116,17 @@ def smooth(s_to_client, pipe, name, process_id):
                         elif friends_key[0:3] == 'a +':
                             # get the friend's socket friends_key like 'Jack, Piter'
 
-                            print('This is a +')
+                            print 'This is a +'
 
                             friends_list = friends_key[3:].split(',')
 
                             for st in friends_list:
 
-                                st.strip()
+                                st.lstrip()
 
-                            print(friends_list)
+                                st.rstrip()
+
+                            print 'friends_list', friends_list
 
                             get_list = ['ADD FRIEND']
 
@@ -137,17 +139,25 @@ def smooth(s_to_client, pipe, name, process_id):
                             # message like ['ADD FRIEND', self_name, friend_list, process_id]
                             pipe.send(get_list)
 
-                            ec_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                            ec_add_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
-                            ec_socket.bind('temp/sock/sk-%d.sock' % (process_id * 100))
+                            ec_unix_address = 'temp/sock/add-%d.sock' % process_id
 
-                            ec_socket.listen(MAX_LISTEN)
+                            if os.path.exists(ec_unix_address):
 
-                            gfs, _ = ec_socket.accept()
+                                os.unlink(ec_unix_address)
+
+                            ec_add_socket.bind(ec_unix_address)
+
+                            ec_add_socket.listen(MAX_LISTEN)
+
+                            gfs, _ = ec_add_socket.accept()
 
                             query_json = gfs.recv(4096)
 
-                            ec_socket.close()
+                            print 'query_json', query_json
+
+                            ec_add_socket.close()
 
                             gfs.close()
 
