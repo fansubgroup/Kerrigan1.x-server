@@ -12,6 +12,8 @@ import Skateboard
 
 def server(s_to_client, PASSWD, addrnew, process_id, client_pipe):
 
+    print('ServerClone is ok.')
+
     data = s_to_client.recv(4096)
 
     SERVERINFO = '@Author: East Evil\nDefault Message From Server\nAnd You Can Change This Information By Youself'

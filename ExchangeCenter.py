@@ -10,6 +10,8 @@ def exchangecenterstaff(server_pipe_update, RELATION_TABLE, to_megaphone_list):
 
     # waitting for recv the message from pipe
 
+    print('ExchangeCenterStaff is ok.')
+
     Skateboard_say = ("This is Customer Service Mr.Skateboard\n"
                       "You could use the ## to enter the <Chat Menu>\n"
                       "You ars talking with a Server Machine."
@@ -97,23 +99,32 @@ def exchangecenterstaff(server_pipe_update, RELATION_TABLE, to_megaphone_list):
 
             aul_socket.send(all_user_json)
 
+            aul_socket.close()
+
             # print(all_user_json)
 
         if server_recv[0] == 'ADD FRIEND':
             #
             # send a invitation to friends
-            # server_recv message like ['ADD FRIEND', name, friend_list]
+            #                           0             1          2            3
+            # server_recv message like ['ADD FRIEND', self_name, friend_list, process_id]
             # RELATION_TABLE will like [name, socket, chat_now_friend, long_time_friend]
 
-            for want_name in server_recv[2]:
+            add_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+
+            add_socket.connect('temp/sock/sk-%d.sock' % (server_recv[3] * 100))
+
+            for want_friends in server_recv[2]:
+                #server_recv is friend_list
 
                 for user_each in RELATION_TABLE:
 
-                    if want_name == user_each[0]:
+                    if want_friends == user_each[0]:
+                        # this is the friend you want to talk
 
-                        every_socket = want_name[1]
+                        every_socket = user_each[1]
 
-                        every_json = json.dumps(['%s want to add you as friends[yes/no]' % server_recv[1], ''])
+                        every_json = json.dumps(['%s want to add you as friends' % server_recv[1], '[yes/no]'])
 
                         every_socket.send(every_json)
 
@@ -121,9 +132,23 @@ def exchangecenterstaff(server_pipe_update, RELATION_TABLE, to_megaphone_list):
 
                         if every_ack == 'y' or 'yes' or 'Yes' or 'YES' or 'YEs' or 'YeS' or 'yEs' or 'yES':
 
-                            add_friends_list(server_recv[1], want_name, RELATION_TABLE)
+                            add_friends_list(server_recv[1], want_friends, RELATION_TABLE)
 
-                            add_friends_list(want_name, server_recv[1], RELATION_TABLE)
+                            add_friends_list(want_friends, server_recv[1], RELATION_TABLE)
+
+                            yes_json = json.dumps(['', 'Add friend success'])
+
+                            add_socket.send(yes_json)
+
+                            add_socket.close()
+
+                        else:
+
+                            no_json = json.dumps(['', 'The request is rejected'])
+
+                            add_socket.send(no_json)
+
+                            add_socket.close()
 
 
 
@@ -151,6 +176,8 @@ def megaphone(RELATION_TABLE, to_megaphone_list):
     # pass the message to chat_now_friend
     #                         1          2
     # to_megaphone_list like [self_name, want_to_say]
+
+    print('Megaphone is ok.')
 
     while True:
 

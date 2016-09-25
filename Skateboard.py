@@ -15,14 +15,10 @@ def smooth(s_to_client, pipe, name, process_id):
     ONE_LIST.append(s_to_client)
 
     ChatMenu = ("f - Find friend in this server\n"
-                "a <Friend Name> - Add a friend in you friend list"
-                "c <Friend Name> - Chat with <Friend Name>\n"
+                "a + <Friend Name> - Add <Friend Name> in you friend list\n"
+                "c + <Friend Name> - Chat with <Friend Name>\n"
                 "q - Quit menu\n"
                 "Q - Quit Chat")
-
-    ec_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-
-    ec_socket.bind('temp/sock/sk-%d.sock' % process_id)
 
     while True:
 
@@ -31,6 +27,8 @@ def smooth(s_to_client, pipe, name, process_id):
         for sock in reads:
 
             data = sock.recv(4096)
+
+            print(data)
 
             if len(data):
 
@@ -63,11 +61,19 @@ def smooth(s_to_client, pipe, name, process_id):
                         # message like ['GET ALL THE ONLINE USERS', process_id]
                         pipe.send(find_list)
 
+                        ec_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+
+                        ec_socket.bind('temp/sock/sk-%d.sock' % process_id)
+
                         ec_socket.listen(MAX_LISTEN)
 
                         cons, _ = ec_socket.accept()
 
                         online_user_json = cons.recv(4096)
+
+                        ec_socket.close()
+
+                        cons.close()
 
                         online_user = json.loads(online_user_json)
 
@@ -77,17 +83,19 @@ def smooth(s_to_client, pipe, name, process_id):
 
                         for i in online_user:
 
-                            s_once = s_once + '%d - %s\n' % (num_key, i[0])
+                            s_once = s_once + '%d - %s\n' % (num_key, i)
 
                             num_key += 1
 
-                        string_1 = "Enter your friends name\nLike 'Jack, Piter'\nq - quit"
+                        string_1 = "Add friend like 'a + Jack, Piter'\nq - quit"
 
                         user_json = json.dumps(['Friends list', s_once + string_1])
 
                         sock.sendall(user_json)
 
                         friends_key = sock.recv(4096)
+
+                        print friends_key
 
                         if friends_key == 'q':
                             # quit the Menu
@@ -105,14 +113,18 @@ def smooth(s_to_client, pipe, name, process_id):
 
                             sock.sendall(t_json)
 
-                        elif friends_key[0] == 'a':
-
+                        elif friends_key[0:3] == 'a +':
                             # get the friend's socket friends_key like 'Jack, Piter'
-                            friends_list = friends_key[2:-1].split(',')
+
+                            print('This is a +')
+
+                            friends_list = friends_key[3:].split(',')
 
                             for st in friends_list:
 
                                 st.strip()
+
+                            print(friends_list)
 
                             get_list = ['ADD FRIEND']
 
@@ -120,8 +132,14 @@ def smooth(s_to_client, pipe, name, process_id):
 
                             get_list.append(friends_list)
 
-                            # message like ['ADD FRIEND', name, friend_list]
+                            get_list.append(process_id)
+
+                            # message like ['ADD FRIEND', self_name, friend_list, process_id]
                             pipe.send(get_list)
+
+                            ec_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+
+                            ec_socket.bind('temp/sock/sk-%d.sock' % (process_id * 100))
 
                             ec_socket.listen(MAX_LISTEN)
 
@@ -129,26 +147,11 @@ def smooth(s_to_client, pipe, name, process_id):
 
                             query_json = gfs.recv(4096)
 
-                            query_result = json.loads(query_json)
+                            ec_socket.close()
 
-                            # deal with the origin data
+                            gfs.close()
 
-                            print len(query_result)
-
-                            name_socket_list = query_result[2]
-
-                            # name_socket_list like [[name, socket], [name, socket], [...]]
-                            for s in name_socket_list:
-
-                                print s[0]
-
-                                fd = rebuild_handle(s[1])
-
-                                fd_socket = socket.fromfd(fd, socket.AF_INET, socket.SOCK_STREAM)
-
-                                FriendCircle.append(fd_socket)
-
-                            sock.sendall("Ok, add successful")
+                            socket.send(query_json)
 
                     elif user_choice == 'q':
 
