@@ -31,6 +31,8 @@ def exchangecenterstaff(server_pipe_update, RELATION_TABLE, to_megaphone_list):
 
             client_socket = socket.fromfd(socket_fd, socket.AF_INET, socket.SOCK_STREAM)
 
+            print type(client_socket)
+
             # user_list_one will like [name, socket, chat_now_friend, long_time_friend]
 
             chat_now_friend = []
@@ -110,12 +112,6 @@ def exchangecenterstaff(server_pipe_update, RELATION_TABLE, to_megaphone_list):
             # server_recv message like ['ADD FRIEND', self_name, friend_list, process_id]
             # RELATION_TABLE will like [name, socket, chat_now_friend, long_time_friend]
 
-            add_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-
-            #print 'ec process_id', server_recv[3]
-
-            add_socket.connect('temp/sock/add-%d.sock' % server_recv[3])
-
             for want_friends in server_recv[2]:
                 # server_recv is friend_list
 
@@ -123,8 +119,11 @@ def exchangecenterstaff(server_pipe_update, RELATION_TABLE, to_megaphone_list):
 
                     if want_friends == user_each[0]:
                         # this is the friend you want to talk
+                        # RELATION_TABLE will like [name, socket, chat_now_friend, long_time_friend]
 
                         every_socket = user_each[1]
+
+                        print type(every_socket)
 
                         every_json = json.dumps(['%s want to add you as friends' % server_recv[1], '[yes/no]'])
 
@@ -140,7 +139,13 @@ def exchangecenterstaff(server_pipe_update, RELATION_TABLE, to_megaphone_list):
 
                             yes_json = json.dumps(['', 'Add friend success'])
 
+                            add_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+
+                            add_socket.connect('temp/sock/add-%d.sock' % server_recv[3])
+
                             add_socket.send(yes_json)
+
+                            print 'yes_json', yes_json
 
                             add_socket.close()
 

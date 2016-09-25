@@ -145,13 +145,7 @@ def smooth(s_to_client, pipe, name, process_id):
 
                             ec_add_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
-                            ec_unix_address = 'temp/sock/add-%d.sock' % process_id
-
-                            if os.path.exists(ec_unix_address):
-
-                                os.unlink(ec_unix_address)
-
-                            ec_add_socket.bind(ec_unix_address)
+                            ec_add_socket.bind('temp/sock/add-%d.sock' % process_id)
 
                             ec_add_socket.listen(MAX_LISTEN)
 
@@ -165,7 +159,7 @@ def smooth(s_to_client, pipe, name, process_id):
 
                             gfs.close()
 
-                            socket.send(query_json)
+                            sock.send(query_json)
 
                     elif user_choice == 'q':
 
