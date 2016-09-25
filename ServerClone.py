@@ -75,7 +75,9 @@ def server(s_to_client, PASSWD, addrnew, process_id, client_pipe):
 
             log_file.close()
 
-            s_to_client.sendall("Have no permission to enter the server")
+            err_json = json.dumps(['Error Password', 'Have no permission to enter the server'])
+
+            s_to_client.sendall(err_json)
 
             self.CONNECTION_LIST.remove(s_to_client)
 

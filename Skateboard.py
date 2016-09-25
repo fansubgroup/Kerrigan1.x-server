@@ -118,21 +118,25 @@ def smooth(s_to_client, pipe, name, process_id):
 
                             print 'This is a +'
 
-                            friends_list = friends_key[3:].split(',')
+                            friends_list_old = friends_key[4:].split(',')
 
-                            for st in friends_list:
+                            friends_list_new = []
+
+                            for st in friends_list_old:
 
                                 st.lstrip()
 
                                 st.rstrip()
 
-                            print 'friends_list', friends_list
+                                friends_list_new.append(st)
+
+                            print 'friends_list_new', friends_list_new
 
                             get_list = ['ADD FRIEND']
 
                             get_list.append(name)
 
-                            get_list.append(friends_list)
+                            get_list.append(friends_list_new)
 
                             get_list.append(process_id)
 

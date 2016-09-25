@@ -112,12 +112,12 @@ def exchangecenterstaff(server_pipe_update, RELATION_TABLE, to_megaphone_list):
 
             add_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
-            print 'ec process_id', server_recv[3]
+            #print 'ec process_id', server_recv[3]
 
             add_socket.connect('temp/sock/add-%d.sock' % server_recv[3])
 
             for want_friends in server_recv[2]:
-                #server_recv is friend_list
+                # server_recv is friend_list
 
                 for user_each in RELATION_TABLE:
 
